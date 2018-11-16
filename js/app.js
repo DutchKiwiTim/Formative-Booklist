@@ -6,29 +6,8 @@ const formFilterBooks = document.getElementById('formFilterBooks');
 const searchBook = document.getElementById('searchBook');
 const searchBookInput = document.getElementById('searchBookInput');
 const searchResults = document.getElementById('searchResults');
+let currentBookInModal;
 
-const allUsers = {
-  karl: [
-    '0321683684',
-    '0385267746',
-    '0321702840',
-    '0132658607',
-    '1407062859',
-    '111824043X',
-    '0321648781',
-    '0321702840',
-    '0262134721',
-  ],
-  trung: [
-    '1118871650',
-    '1593275846',
-    '1491964898',
-  ],
-  tim: [
-    '1454925663',
-    '1593275846',
-  ],
-};
 
 // EVENT LISTENERS
 olBookList.addEventListener('click', checkForDuplicate);
@@ -56,13 +35,12 @@ function selectUser(e) {
 // BOOK TITLES LIST - STEP 2 - pull book titles from api
 function getAllBookTitles(selectedList) {
   selectedList.forEach(isbn => {
-    // get book data
     fetch('https://www.googleapis.com/books/v1/volumes?q=isbn:' + isbn, { 
       method: 'get',
     })
     .then(response => { return response.json(); })
     .then(data => {
-      // read book title from api
+      // read book title from data
       let bookTitle = data.items[0].volumeInfo.title;
       // run function to create li with isbn and book title as parameters
       createListElement(isbn, bookTitle);
@@ -91,56 +69,47 @@ function createListElement(i, t) {
 
 // MODAL CONTENT - STEP 1
 function checkForDuplicate(e) {
-  const modalContent = document.getElementById('modal-book-details');
-  const isbn = e.target.id;
-
-    // if element does NOT exist, run function
-    if (!modalContent) {
-      getBookDetails(isbn);
-      $('#bookModal').modal();
-    // if element DOES exist, move on to next conditional
-    } else if (modalContent && modalContent.firstElementChild.innerHTML != isbn) {
-      getBookDetails(isbn);
-      $('#bookModal').modal();
-    // open modal without updating content
-    } else {
-      $('#bookModal').modal();
+    // if target content is already loaded, do not load again
+    if (e.target.id !== currentBookInModal) {
+      // otherwise remove content
+      if (modalBody.firstElementChild) {
+        modalBody.removeChild(modalBody.firstElementChild);
+      }
+      getBookDetails(e.target.id);
     }
+  // show bootstrap modal
+  $('#bookModal').modal();  
 }
+
 
 // MODAL CONTENT - STEP 2
 function getBookDetails(isbn) {
   fetch('https://www.googleapis.com/books/v1/volumes?q=isbn:' + isbn, { 
-      method: 'get',
-      })
-      .then(response => { return response.json(); })
-      .then(data => {      
-        const bookTitle = data.items[0].volumeInfo.title;
-        let subtitle = data.items[0].volumeInfo.subtitle;
-        const ulBookAuthor = data.items[0].volumeInfo.authors[0];
-        const ulBookThumb = data.items[0].volumeInfo.imageLinks.thumbnail;
-        const ulBookdescription = data.items[0].volumeInfo.description;
-        const ulBookPageCount = data.items[0].volumeInfo.pageCount;
-        const ulBookLink = data.items[0].volumeInfo.canonicalVolumeLink;
-        //console.log(data.items[0].volumeInfo.subtitle);
-        // if there is no subtitle returned from api, display this message
-        if (!subtitle) {
-          subtitle = 'No subtitle found for this book.';
-        }
-       
-        const modalContent = document.getElementById('modal-book-details');
-        if (!modalContent) {
-          createModalContent(bookTitle, ulBookAuthor, isbn, ulBookThumb, ulBookdescription, ulBookPageCount, ulBookLink, subtitle);
+    method: 'get',
+    })
+    .then(response => { return response.json(); })
+    .then(data => {
+      const volumeInfo = data.items[0].volumeInfo;   
 
-        } else if (modalContent) {
-          modalBody.removeChild(modalBody.firstElementChild);
-          createModalContent(bookTitle, ulBookAuthor, isbn, ulBookThumb, ulBookdescription, ulBookPageCount, ulBookLink, subtitle);
-        }
+      const bookTitle = volumeInfo.title;
+      const ulBookAuthor = volumeInfo.authors[0];
+      const ulBookThumb = volumeInfo.imageLinks.thumbnail;
+      const ulBookdescription = volumeInfo.description;
+      const ulBookPageCount = volumeInfo.pageCount;
+      const ulBookLink = volumeInfo.canonicalVolumeLink;        
+      let subtitle = volumeInfo.subtitle;
+      if (!subtitle) {
+        subtitle = 'No subtitle found for this book.';
+      }
+      
+      createModalContent(bookTitle, ulBookAuthor, isbn, ulBookThumb, ulBookdescription, ulBookPageCount, ulBookLink, subtitle);
+      // set the global variable so that it can be checked for duplicate content on the next click event
+      currentBookInModal = isbn;
 
-      })
-      .catch(error => {   
-        console.log(error);
-      }); 
+    })
+    .catch(error => {   
+      console.log(error);
+    }); 
 }
 
 
@@ -207,19 +176,20 @@ e.preventDefault();
 
 // SEARCH BOOK - STEP 2 - Create UI
 function searchShowBooks(first, second, third, fourth, fifth) {
-  
+  // remove previous search results if any
   while (searchResults.firstChild) {
     searchResults.removeChild(searchResults.firstChild);
   }
+  // create array and fill it with search results
   const results = [first, second, third, fourth, fifth];
-
+  // create html and insert into DOM for each search result
   results.forEach(result => {
     const li = document.createElement('li');
     li.id = result.volumeInfo.industryIdentifiers[0].identifier;
     li.classList.add('list-group-item', 'list-group-item-action', 'numbered');
     li.innerText = result.volumeInfo.title;
     const btn = document.createElement('a');
-    btn.classList.add('btn', 'btn-outline-secondary', 'btn-sm', 'btn-block', 'mt-1', 'mb-2', 'animated', 'flipInX');
+    btn.classList.add('btn', 'btn-outline-secondary', 'btn-sm', 'float-right', 'mt-1', 'mb-2', 'animated', 'flipInX');
     btn.innerText = 'Add to List';
     li.appendChild(btn);
     searchResults.appendChild(li);
