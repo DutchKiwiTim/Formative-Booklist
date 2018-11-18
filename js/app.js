@@ -10,20 +10,27 @@ let currentBookInModal;
 
 
 // EVENT LISTENERS
-olBookList.addEventListener('click', checkForDuplicate);
-searchResults.addEventListener('click', checkForDuplicate);
 formSelectUser.addEventListener('change', selectUser);
 formFilterBooks.addEventListener('keyup', filterBooks);
 searchBook.addEventListener('submit', searchFindBooks);
+// only load these event listeners if there are books on the page
+function loadEventListeners () {
+  if (!olBookList.firstElementChild.classList.contains('booklist-placeholder')) {
+    olBookList.addEventListener('click', checkForDuplicate);
+  }
+  if (!searchResults.firstElementChild.classList.contains('booklist-placeholder')) {
+    searchResults.addEventListener('click', checkForDuplicate);
+  }
+}
 
 
-
-// BOOK TITLES LIST - STEP 1 - remove other lists if present in DOM and then determine user to build new list
+// BOOK TITLES LIST - STEP 1 - remove other lists if present in DOM and then determine selected person to build new list
 function selectUser(e) {
   // remove other list from DOM first
   while (olBookList.firstChild) {
     olBookList.removeChild(olBookList.firstChild);
   }
+  // determine selected person to build new list
   const selectedUser = e.target.value;
   if (allUsers.hasOwnProperty(selectedUser)) {
     getAllBookTitles(allUsers[selectedUser]);
@@ -63,6 +70,9 @@ function createListElement(i, t) {
   newLi.innerHTML = t;
   // append li to ol
   olBookList.appendChild(newLi);
+
+  // load event listener on list items
+  loadEventListeners ();
 };
 
 
@@ -78,7 +88,7 @@ function checkForDuplicate(e) {
       getBookDetails(e.target.id);
     }
   // show bootstrap modal
-  $('#bookModal').modal();  
+  $('#bookModal').modal(); 
 }
 
 
@@ -92,17 +102,20 @@ function getBookDetails(isbn) {
       const volumeInfo = data.items[0].volumeInfo;   
 
       const bookTitle = volumeInfo.title;
-      const ulBookAuthor = volumeInfo.authors[0];
-      const ulBookThumb = volumeInfo.imageLinks.thumbnail;
-      const ulBookdescription = volumeInfo.description;
-      const ulBookPageCount = volumeInfo.pageCount;
-      const ulBookLink = volumeInfo.canonicalVolumeLink;        
+      const BookAuthor = volumeInfo.authors[0];
+      const BookThumb = volumeInfo.imageLinks.thumbnail;
+      const BookPageCount = volumeInfo.pageCount;
+      const BookLink = volumeInfo.canonicalVolumeLink;        
       let subtitle = volumeInfo.subtitle;
+      let Bookdescription = volumeInfo.description;
       if (!subtitle) {
         subtitle = 'No subtitle found for this book.';
       }
+      if (!Bookdescription) {
+        Bookdescription = 'No description found for this book';
+      }
       
-      createModalContent(bookTitle, ulBookAuthor, isbn, ulBookThumb, ulBookdescription, ulBookPageCount, ulBookLink, subtitle);
+      createModalContent(bookTitle, BookAuthor, isbn, BookThumb, Bookdescription, BookPageCount, BookLink, subtitle);
       // set the global variable so that it can be checked for duplicate content on the next click event
       currentBookInModal = isbn;
 
@@ -140,22 +153,6 @@ function createModalContent(a, b, c, d, e, f, g, h) {
 }
 
 
-// FILTER BOOKS
-function filterBooks(e) {
-  const text = e.target.value.toLowerCase();
-
-  document.querySelectorAll('.list-group-item').forEach(book => {
-    const item = book.innerText;
-    if (item.toLowerCase().indexOf(text) != -1) {
-      book.style.display = 'list-item';
-    } else {
-      book.style.display = 'none';
-    }
-  })
-}
-
-
-
 
 // SEARCH BOOK - STEP 1 - Get Search Results
 function searchFindBooks(e) {
@@ -170,6 +167,7 @@ function searchFindBooks(e) {
     .catch(error => {   
       console.log(error);
     });
+
 e.preventDefault();
 }
 
@@ -195,5 +193,26 @@ function searchShowBooks(first, second, third, fourth, fifth) {
     searchResults.appendChild(li);
   });
   searchBookInput.value = '';
+
+  // load event listener on list items
+  loadEventListeners ();
 }
 
+
+// FILTER BOOKS
+function filterBooks(e) {
+  // only filter books if there are books in the DOM
+  if (!olBookList.firstElementChild.classList.contains('booklist-placeholder')) {
+    
+    const text = e.target.value.toLowerCase();
+    
+    olBookList.childNodes.forEach(book => {
+      const item = book.innerText;
+      if (item.toLowerCase().indexOf(text) != -1) {
+        book.style.display = 'list-item';
+      } else {
+        book.style.display = 'none';
+      }
+    })
+  }
+}

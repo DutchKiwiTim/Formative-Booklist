@@ -70,6 +70,16 @@ p {
   font-size: 15px;
 }
 
+.booklist-placeholder:hover {
+  cursor: default!important;
+}
+#olBookList>li.booklist-placeholder:hover {
+  background-color: rgba(239, 226, 186, 0.9)!important;
+}
+#searchResults>li.booklist-placeholder:hover {
+  background-color: rgba(197, 203, 227, 0.25)!important;
+}
+
 /* Blue list items */
 .list-group-item:nth-child(odd) {
   background-color: rgba(197, 203, 227, 0.25);
